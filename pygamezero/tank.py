@@ -1,4 +1,3 @@
-#from pgzero import Rect
 import math
 import pygame
 

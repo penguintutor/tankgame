@@ -2,6 +2,7 @@ import math
 import random
 import pygame
 from tank import Tank
+from shell import Shell
 
 WIDTH=800
 HEIGHT=600
@@ -43,13 +44,7 @@ right_gun_angle = 50
 left_gun_power = 25
 right_gun_power = 25
 # These are shared between left and right as we only fire one shell at a time
-shell_power = 1
-shell_angle = 0
-shell_time = 0
 
-# Position of shell when fired (create as a global - but update before use)
-shell_start_position = (0,0)
-shell_current_position = (0,0)
 
 # Position of the two tanks - set to zero, update before use
 left_tank_position = (0,0)
@@ -60,11 +55,8 @@ tank1 = Tank("left", TANK_COLOR_P1)
 # Tank 2 = Right
 tank2 = Tank("right", TANK_COLOR_P2)
 
-def draw_shell (position):
-    (xpos, ypos) = position
-    # Create rectangle of the shell
-    shell_rect = Rect((math.floor(xpos),math.floor(ypos)),(5,5))
-    pygame.draw.ellipse(screen.surface, SHELL_COLOR, shell_rect)
+# Only fire one shell at a time, a single shell object can be used for both player 1 and player 2
+shell = Shell(SHELL_COLOR)
 
 
 
@@ -79,7 +71,7 @@ def draw():
     if (game_state == "player2" or game_state == "player2fire"):
         screen.draw.text("Player 2\nPower "+str(right_gun_power)+"%", fontsize=30, topright=(WIDTH-50,50), color=(TEXT_COLOR))
     if (game_state == "player1fire" or game_state == "player2fire"):
-        draw_shell(shell_current_position)
+        shell.draw_shell(screen)
     if (game_state == "game_over_1"):
         screen.draw.text("Game Over\nPlayer 1 wins!", fontsize=60, center=(WIDTH/2,200), color=(TEXT_COLOR))
     if (game_state == "game_over_2"):
@@ -100,14 +92,14 @@ def update():
             # Set shell position to end of gun
             # Use gun_positions so we can get start position
             gun_positions = tank1.calc_gun_positions (left_tank_position, left_gun_angle)
-            shell_start_position = gun_positions[3]
-            shell_current_position = gun_positions[3]
+            shell.set_start_position(gun_positions[3])
+            shell.set_current_position(gun_positions[3])
             game_state = 'player1fire'
-            shell_angle = math.radians (left_gun_angle)
-            shell_power = left_gun_power / 40
-            shell_time = 0
+            shell.set_angle(math.radians (left_gun_angle))
+            shell.set_power(left_gun_power / 40)
+            shell.set_time(0)
     if (game_state == 'player1fire'):
-        update_shell_position ("left")
+        shell.update_shell_position ("left")
         # shell value is whether the shell is inflight, hit or missed
         shell_value = detect_hit("left")
         # shell_value 20 is if other tank hit
@@ -122,14 +114,14 @@ def update():
             # Set shell position to end of gun
             # Use gun_positions so we can get start position
             gun_positions = tank2.calc_gun_positions (right_tank_position, right_gun_angle)
-            shell_start_position = gun_positions[3]
-            shell_current_position = gun_positions[3]
+            shell.set_start_position(gun_positions[3])
+            shell.set_current_position(gun_positions[3])
             game_state = 'player2fire'
-            shell_angle = math.radians (right_gun_angle)
-            shell_power = right_gun_power / 40
-            shell_time = 0
+            shell.set_angle(math.radians (right_gun_angle))
+            shell.set_power(right_gun_power / 40)
+            shell.set_time(0)
     if (game_state == 'player2fire'):
-        update_shell_position ("right")
+        shell.update_shell_position ("right")
         # shell value is whether the shell is inflight, hit or missed
         shell_value = detect_hit("right")
         # shell_value 20 is if other tank hit
@@ -146,32 +138,7 @@ def update():
             setup()
 
 
-def update_shell_position (left_right):
-    global shell_power, shell_angle, shell_start_position, shell_current_position, shell_time
 
-    init_velocity_y = shell_power * math.sin(shell_angle)
-
-    # Direction - multiply by -1 for left to right
-    if (left_right == 'left'):
-        init_velocity_x = shell_power * math.cos(shell_angle)
-    else:
-        init_velocity_x = shell_power * math.cos(math.pi - shell_angle)
-
-    # Gravity constant is 9.8 m/s^2 but this is in terms of screen so instead use a sensible constant
-    GRAVITY_CONSTANT = 0.004
-    # Constant to give a sensible distance on x axis
-    DISTANCE_CONSTANT = 1.5
-    # Wind is not included in this version, to implement then decreasing wind value is when the wind is against the fire direction
-    # wind > 1 is where wind is against the direction of fire. Wind must never be 0 or negative (which would make it impossible to fire forwards)
-    wind_value = 1
-
-    # time is calculated in update cycles
-    shell_x = shell_start_position[0] + init_velocity_x * shell_time * DISTANCE_CONSTANT
-    shell_y = shell_start_position[1] + -1 * ((init_velocity_y * shell_time) - (0.5 * GRAVITY_CONSTANT * shell_time * shell_time * wind_value))
-
-    shell_current_position = (shell_x, shell_y)
-
-    shell_time += 1
 
 # Detects if the shell has hit something.
 # Simple detection looks at colour of the screen at the position
@@ -182,8 +149,7 @@ def update_shell_position (left_right):
 # 11 for hit ground,
 # 20 for hit other tank
 def detect_hit (left_right):
-    global shell_current_position
-    (shell_x, shell_y) = shell_current_position
+    (shell_x, shell_y) = shell.get_current_position()
     # Add offset (3 pixels)
     # offset left/right depending upon direction of fire
     if (left_right == "left"):
