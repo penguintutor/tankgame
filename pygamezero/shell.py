@@ -29,7 +29,7 @@ class Shell:
     def set_time(self, time):
         self.time = time
 
-    def draw_shell (self, screen):
+    def draw (self, screen):
         (xpos, ypos) = self.current_position
         # Create rectangle of the shell
         shell_rect = pygame.Rect((math.floor(xpos),math.floor(ypos)),(5,5))

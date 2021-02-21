@@ -43,12 +43,6 @@ right_gun_angle = 50
 # Amount of power to fire with - is divided by 40 to give scale 10 to 100
 left_gun_power = 25
 right_gun_power = 25
-# These are shared between left and right as we only fire one shell at a time
-
-
-# Position of the two tanks - set to zero, update before use
-left_tank_position = (0,0)
-right_tank_position = (0,0)
 
 # Tank 1 = Left
 tank1 = Tank("left", TANK_COLOR_P1)
@@ -64,21 +58,21 @@ def draw():
     global game_state, left_tank_position, right_tank_position, left_gun_angle, right_gun_angle, shell_start_position
     screen.fill(SKY_COLOR)
     pygame.draw.polygon(screen.surface, GROUND_COLOR, land_positions)
-    tank1.draw_tank (screen, left_tank_position, left_gun_angle)
-    tank2.draw_tank (screen, right_tank_position, right_gun_angle)
+    tank1.draw (screen, left_gun_angle)
+    tank2.draw (screen, right_gun_angle)
     if (game_state == "player1" or game_state == "player1fire"):
         screen.draw.text("Player 1\nPower "+str(left_gun_power)+"%", fontsize=30, topleft=(50,50), color=(TEXT_COLOR))
     if (game_state == "player2" or game_state == "player2fire"):
         screen.draw.text("Player 2\nPower "+str(right_gun_power)+"%", fontsize=30, topright=(WIDTH-50,50), color=(TEXT_COLOR))
     if (game_state == "player1fire" or game_state == "player2fire"):
-        shell.draw_shell(screen)
+        shell.draw(screen)
     if (game_state == "game_over_1"):
         screen.draw.text("Game Over\nPlayer 1 wins!", fontsize=60, center=(WIDTH/2,200), color=(TEXT_COLOR))
     if (game_state == "game_over_2"):
         screen.draw.text("Game Over\nPlayer 2 wins!", fontsize=60, center=(WIDTH/2,200), color=(TEXT_COLOR))
 
 def update():
-    global game_state, left_gun_angle, left_tank_position, shell_start_position, shell_current_position, shell_angle, shell_time, left_gun_power, right_gun_power, shell_power, game_timer
+    global game_state, left_gun_angle, left_gun_power, right_gun_power, game_timer
     # Delayed start (prevent accidental firing by holding start button down)
     if (game_state == 'start'):
         game_timer += 1
@@ -91,7 +85,7 @@ def update():
         if (player1_fired == True):
             # Set shell position to end of gun
             # Use gun_positions so we can get start position
-            gun_positions = tank1.calc_gun_positions (left_tank_position, left_gun_angle)
+            gun_positions = tank1.calc_gun_positions (left_gun_angle)
             shell.set_start_position(gun_positions[3])
             shell.set_current_position(gun_positions[3])
             game_state = 'player1fire'
@@ -113,7 +107,7 @@ def update():
         if (player2_fired == True):
             # Set shell position to end of gun
             # Use gun_positions so we can get start position
-            gun_positions = tank2.calc_gun_positions (right_tank_position, right_gun_angle)
+            gun_positions = tank2.calc_gun_positions (right_gun_angle)
             shell.set_start_position(gun_positions[3])
             shell.set_current_position(gun_positions[3])
             game_state = 'player2fire'
@@ -225,9 +219,9 @@ def player_keyboard(left_right):
 
 # Setup game - allows create new game
 def setup():
-    global left_tank_position, right_tank_position, land_positions
+    global land_positions
     # Setup landscape (these positions represent left side of platform)
-    # Choose a random position
+    # Choose a random position (temp values - to be stored in tank object)
     # The complete x,y co-ordinates will be saved in a tuple in left_tank_rect and right_tank_rect
     left_tank_x_position = random.randint (10,300)
     right_tank_x_position = random.randint (500,750)
@@ -240,14 +234,14 @@ def setup():
     while (current_land_x < WIDTH):
         if (current_land_x == left_tank_x_position):
             # handle tank platform
-            left_tank_position = (current_land_x, current_land_y)
+            tank1.set_position ((current_land_x, current_land_y))
             # Add another 50 pixels further along at same y position (level ground for tank to sit on)
             current_land_x += 60
             land_positions.append((current_land_x, current_land_y))
             continue
         elif (current_land_x == right_tank_x_position):
             # handle tank platform
-            right_tank_position = (current_land_x, current_land_y)
+            tank2.set_position ((current_land_x, current_land_y))
             # Add another 50 pixels further along at same y position (level ground for tank to sit on)
             current_land_x += 60
             land_positions.append((current_land_x, current_land_y))

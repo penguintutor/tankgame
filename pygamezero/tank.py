@@ -10,13 +10,20 @@ class Tank:
     def __init__(self, left_right, tank_color):
         self.left_right = left_right
         self.tank_color = tank_color
+        self.position = (0,0)
+
+    def set_position (self, position):
+        self.position = position
+
+    def get_position (self):
+        return self.position
 
     # Draws tank (including gun - which depends upon direction and aim)
     # self.left_right can be "left" or "right" to depict which position the tank is in
     # tank_start_pos requires x, y co-ordinates as a tuple
     # angle is relative to horizontal - in degrees
-    def draw_tank (self, screen, tank_start_pos, gun_angle):
-        (xpos, ypos) = tank_start_pos
+    def draw (self, screen, gun_angle):
+        (xpos, ypos) = self.position
 
         # The shape of the tank track is a polygon
         # (uses list of tuples for the x and y co-ords)
@@ -42,13 +49,13 @@ class Tank:
         pygame.draw.ellipse(screen.surface, self.tank_color, turret_rect)
 
         # Gun position involves more complex calculations so in a separate function
-        gun_positions = self.calc_gun_positions (tank_start_pos, gun_angle)
+        gun_positions = self.calc_gun_positions (gun_angle)
         # Polygon for gun barrel (pygame not pygame zero)
         pygame.draw.polygon(screen.surface, self.tank_color, gun_positions)
 
     # Calculate the polygon positions for the gun barrel
-    def calc_gun_positions (self, tank_start_pos, gun_angle):
-        (xpos, ypos) = tank_start_pos
+    def calc_gun_positions (self, gun_angle):
+        (xpos, ypos) = self.position
         # Set the start of the gun (top of barrel at point it joins the tank)
         if (self.left_right == "right"):
             gun_start_pos_top = (xpos+20, ypos-20)
