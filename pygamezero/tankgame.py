@@ -1,6 +1,7 @@
 import math
 import random
 import pygame
+from tank import Tank
 
 WIDTH=800
 HEIGHT=600
@@ -15,6 +16,7 @@ HEIGHT=600
 game_state = "player1"
 
 # Colour constants
+SKY_COLOR = (165, 182, 209)
 SKY_COLOR = (165, 182, 209)
 GROUND_COLOR = (9,84,5)
 # Different tank colors for player 1 and player 2
@@ -53,103 +55,25 @@ shell_current_position = (0,0)
 left_tank_position = (0,0)
 right_tank_position = (0,0)
 
-# Draws tank (including gun - which depends upon direction and aim)
-# left_right can be "left" or "right" to depict which position the tank is in
-# tank_start_pos requires x, y co-ordinates as a tuple
-# angle is relative to horizontal - in degrees
-def draw_tank (left_right, tank_start_pos, gun_angle):
-    (xpos, ypos) = tank_start_pos
-
-    # Set appropriate colour for the tank
-    if (left_right == "left"):
-        tank_color = TANK_COLOR_P1
-    else:
-        tank_color = TANK_COLOR_P2
-
-    # The shape of the tank track is a polygon
-    # (uses list of tuples for the x and y co-ords)
-    track_positions = [
-        (xpos+5, ypos-5),
-        (xpos+10, ypos-10),
-        (xpos+50, ypos-10),
-        (xpos+55, ypos-5),
-        (xpos+50, ypos),
-        (xpos+10, ypos)
-    ]
-    # Polygon for tracks (pygame not pygame zero)
-    pygame.draw.polygon(screen.surface, tank_color, track_positions)
-
-    # hull uses a rectangle which uses top right co-ords and dimensions
-    hull_rect = Rect((xpos+15,ypos-20),(30,10))
-    # Rectangle for tank body "hull" (pygame zero)
-    screen.draw.filled_rect(hull_rect, tank_color)
-
-    # Despite being an ellipse pygame requires this as a rect
-    turret_rect = Rect((xpos+20,ypos-25),(20,10))
-    # Ellipse for turret (pygame not pygame zero)
-    pygame.draw.ellipse(screen.surface, tank_color, turret_rect)
-
-    # Gun position involves more complex calculations so in a separate function
-    gun_positions = calc_gun_positions (left_right, tank_start_pos, gun_angle)
-    # Polygon for gun barrel (pygame not pygame zero)
-    pygame.draw.polygon(screen.surface, tank_color, gun_positions)
-
+# Tank 1 = Left
+tank1 = Tank("left")
+# Tank 2 = Right
+tank2 = Tank("right")
 
 def draw_shell (position):
     (xpos, ypos) = position
     # Create rectangle of the shell
-    shell_rect = Rect((xpos,ypos),(5,5))
+    shell_rect = Rect((math.floor(xpos),math.floor(ypos)),(5,5))
     pygame.draw.ellipse(screen.surface, SHELL_COLOR, shell_rect)
 
-
-# Calculate the polygon positions for the gun barrel
-def calc_gun_positions (left_right, tank_start_pos, gun_angle):
-    (xpos, ypos) = tank_start_pos
-    # Set the start of the gun (top of barrel at point it joins the tank)
-    if (left_right == "right"):
-        gun_start_pos_top = (xpos+20, ypos-20)
-    else:
-        gun_start_pos_top = (xpos+40, ypos-20)
-
-    # Convert angle to radians (for right subtract from 180 deg first)
-    relative_angle = gun_angle
-    if (left_right == "right"):
-        relative_angle = 180 - gun_angle
-    angle_rads = relative_angle * (math.pi / 180)
-    # Create vector based on the direction of the barrel
-    # Y direction *-1 (due to reverse y of screen)
-    gun_vector =  (math.cos(angle_rads), math.sin(angle_rads) * -1)
-
-    # Determine position bottom of barrel
-    # Create temporary vector 90deg to existing vector
-    if (left_right == "right"):
-        temp_angle_rads = math.radians(relative_angle - 90)
-    else:
-        temp_angle_rads = math.radians(relative_angle + 90)
-    temp_vector =  (math.cos(temp_angle_rads), math.sin(temp_angle_rads) * -1)
-
-    # Add constants for gun size
-    GUN_LENGTH = 20
-    GUN_DIAMETER = 3
-    gun_start_pos_bottom = (gun_start_pos_top[0] + temp_vector[0] * GUN_DIAMETER, gun_start_pos_top[1] + temp_vector[1] * GUN_DIAMETER)
-
-    # Calculate barrel positions based on vector from start position
-    gun_positions = [
-        gun_start_pos_bottom,
-        gun_start_pos_top,
-        (gun_start_pos_top[0] + gun_vector[0] * GUN_LENGTH, gun_start_pos_top[1] + gun_vector[1] * GUN_LENGTH),
-        (gun_start_pos_bottom[0] + gun_vector[0] * GUN_LENGTH, gun_start_pos_bottom[1] + gun_vector[1] * GUN_LENGTH),
-    ]
-
-    return gun_positions
 
 
 def draw():
     global game_state, left_tank_position, right_tank_position, left_gun_angle, right_gun_angle, shell_start_position
     screen.fill(SKY_COLOR)
     pygame.draw.polygon(screen.surface, GROUND_COLOR, land_positions)
-    draw_tank ("left", left_tank_position, left_gun_angle)
-    draw_tank ("right", right_tank_position, right_gun_angle)
+    tank1.draw_tank (screen, left_tank_position, left_gun_angle)
+    tank2.draw_tank (screen, right_tank_position, right_gun_angle)
     if (game_state == "player1" or game_state == "player1fire"):
         screen.draw.text("Player 1\nPower "+str(left_gun_power)+"%", fontsize=30, topleft=(50,50), color=(TEXT_COLOR))
     if (game_state == "player2" or game_state == "player2fire"):
@@ -175,7 +99,7 @@ def update():
         if (player1_fired == True):
             # Set shell position to end of gun
             # Use gun_positions so we can get start position
-            gun_positions = calc_gun_positions ("left", left_tank_position, left_gun_angle)
+            gun_positions = tank1.calc_gun_positions (left_tank_position, left_gun_angle)
             shell_start_position = gun_positions[3]
             shell_current_position = gun_positions[3]
             game_state = 'player1fire'
@@ -197,7 +121,7 @@ def update():
         if (player2_fired == True):
             # Set shell position to end of gun
             # Use gun_positions so we can get start position
-            gun_positions = calc_gun_positions ("right", right_tank_position, right_gun_angle)
+            gun_positions = tank2.calc_gun_positions (right_tank_position, right_gun_angle)
             shell_start_position = gun_positions[3]
             shell_current_position = gun_positions[3]
             game_state = 'player2fire'
