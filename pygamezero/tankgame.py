@@ -3,6 +3,7 @@ import random
 import pygame
 from tank import Tank
 from shell import Shell
+from land import Land
 
 WIDTH=800
 HEIGHT=600
@@ -27,13 +28,6 @@ TANK_COLOR_P2 = (219, 163, 82)
 SHELL_COLOR = (255,255,255)
 TEXT_COLOR = (255,255,255)
 
-# How big a chunk to split up x axis
-LAND_CHUNK_SIZE = 20
-# Max that land can go up or down within chunk size
-LAND_MAX_CHG = 20
-# Max height of ground
-LAND_MIN_Y = 200
-
 # Timer used to create delays before action (prevent accidental button press)
 game_timer = 0
 
@@ -52,12 +46,17 @@ tank2 = Tank("right", TANK_COLOR_P2)
 # Only fire one shell at a time, a single shell object can be used for both player 1 and player 2
 shell = Shell(SHELL_COLOR)
 
+ground = Land(GROUND_COLOR, (WIDTH, HEIGHT))
+
+
+tank1.set_position(ground.get_tank1_position())
+tank2.set_position(ground.get_tank2_position())
 
 
 def draw():
     global game_state, left_tank_position, right_tank_position, left_gun_angle, right_gun_angle, shell_start_position
     screen.fill(SKY_COLOR)
-    pygame.draw.polygon(screen.surface, GROUND_COLOR, land_positions)
+    ground.draw(screen)
     tank1.draw (screen, left_gun_angle)
     tank2.draw (screen, right_gun_angle)
     if (game_state == "player1" or game_state == "player1fire"):
@@ -216,59 +215,3 @@ def player_keyboard(left_right):
         right_gun_power = this_gun_power
 
     return False
-
-# Setup game - allows create new game
-def setup():
-    global land_positions
-    # Setup landscape (these positions represent left side of platform)
-    # Choose a random position (temp values - to be stored in tank object)
-    # The complete x,y co-ordinates will be saved in a tuple in left_tank_rect and right_tank_rect
-    left_tank_x_position = random.randint (10,300)
-    right_tank_x_position = random.randint (500,750)
-
-    # Sub divide screen into chunks for the landscape
-    # store as list of x positions (0 is first position)
-    current_land_x = 0
-    current_land_y = random.randint (300,400)
-    land_positions = [(current_land_x,current_land_y)]
-    while (current_land_x < WIDTH):
-        if (current_land_x == left_tank_x_position):
-            # handle tank platform
-            tank1.set_position ((current_land_x, current_land_y))
-            # Add another 50 pixels further along at same y position (level ground for tank to sit on)
-            current_land_x += 60
-            land_positions.append((current_land_x, current_land_y))
-            continue
-        elif (current_land_x == right_tank_x_position):
-            # handle tank platform
-            tank2.set_position ((current_land_x, current_land_y))
-            # Add another 50 pixels further along at same y position (level ground for tank to sit on)
-            current_land_x += 60
-            land_positions.append((current_land_x, current_land_y))
-            continue
-        # Checks to see if next position will be where the tanks are
-        if (current_land_x < left_tank_x_position and current_land_x + LAND_CHUNK_SIZE >= left_tank_x_position):
-            # set x position to tank position
-            current_land_x = left_tank_x_position
-        elif (current_land_x < right_tank_x_position and current_land_x + LAND_CHUNK_SIZE >= right_tank_x_position):
-            # set x position to tank position
-            current_land_x = right_tank_x_position
-        elif (current_land_x + LAND_CHUNK_SIZE > WIDTH):
-            current_land_x = WIDTH
-        else:
-            current_land_x += LAND_CHUNK_SIZE
-        # Set the y height
-        current_land_y += random.randint(0-LAND_MAX_CHG,LAND_MAX_CHG)
-        # check not too high or too lower (note the reverse logic as high y is bottom of screen)
-        if (current_land_y > HEIGHT):   # Bottom of screen
-            current_land_y = HEIGHT
-        if (current_land_y < LAND_MIN_Y):
-            current_land_y = LAND_MIN_Y
-        # Add to list
-        land_positions.append((current_land_x, current_land_y))
-    # Add end corners
-    land_positions.append((WIDTH,HEIGHT))
-    land_positions.append((0,HEIGHT))
-
-# Setup the game (at end so that it can see the other functions)
-setup()
