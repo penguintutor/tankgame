@@ -56,9 +56,9 @@ left_tank_position = (0,0)
 right_tank_position = (0,0)
 
 # Tank 1 = Left
-tank1 = Tank("left")
+tank1 = Tank("left", TANK_COLOR_P1)
 # Tank 2 = Right
-tank2 = Tank("right")
+tank2 = Tank("right", TANK_COLOR_P2)
 
 def draw_shell (position):
     (xpos, ypos) = position

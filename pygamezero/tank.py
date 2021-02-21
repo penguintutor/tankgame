@@ -8,8 +8,9 @@ SHELL_COLOR = (255,255,255)
 
 class Tank:
 
-    def __init__(self, left_right):
+    def __init__(self, left_right, tank_color):
         self.left_right = left_right
+        self.tank_color = tank_color
 
     # Draws tank (including gun - which depends upon direction and aim)
     # self.left_right can be "left" or "right" to depict which position the tank is in
@@ -17,12 +18,6 @@ class Tank:
     # angle is relative to horizontal - in degrees
     def draw_tank (self, screen, tank_start_pos, gun_angle):
         (xpos, ypos) = tank_start_pos
-
-        # Set appropriate colour for the tank
-        if (self.left_right == "left"):
-            tank_color = TANK_COLOR_P1
-        else:
-            tank_color = TANK_COLOR_P2
 
         # The shape of the tank track is a polygon
         # (uses list of tuples for the x and y co-ords)
@@ -35,22 +30,22 @@ class Tank:
             (xpos+10, ypos)
         ]
         # Polygon for tracks (pygame not pygame zero)
-        pygame.draw.polygon(screen.surface, tank_color, track_positions)
+        pygame.draw.polygon(screen.surface, self.tank_color, track_positions)
 
         # hull uses a rectangle which uses top right co-ords and dimensions
         hull_rect = pygame.Rect((xpos+15,ypos-20),(30,10))
         # Rectangle for tank body "hull" (pygame zero)
-        screen.draw.filled_rect(hull_rect, tank_color)
+        screen.draw.filled_rect(hull_rect, self.tank_color)
 
         # Despite being an ellipse pygame requires this as a rect
         turret_rect = pygame.Rect((xpos+20,ypos-25),(20,10))
         # Ellipse for turret (pygame not pygame zero)
-        pygame.draw.ellipse(screen.surface, tank_color, turret_rect)
+        pygame.draw.ellipse(screen.surface, self.tank_color, turret_rect)
 
         # Gun position involves more complex calculations so in a separate function
         gun_positions = self.calc_gun_positions (tank_start_pos, gun_angle)
         # Polygon for gun barrel (pygame not pygame zero)
-        pygame.draw.polygon(screen.surface, tank_color, gun_positions)
+        pygame.draw.polygon(screen.surface, self.tank_color, gun_positions)
 
     # Calculate the polygon positions for the gun barrel
     def calc_gun_positions (self, tank_start_pos, gun_angle):
