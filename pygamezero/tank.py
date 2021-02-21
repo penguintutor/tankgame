@@ -11,6 +11,13 @@ class Tank:
         self.left_right = left_right
         self.tank_color = tank_color
         self.position = (0,0)
+        # Angle that the gun is pointing (degrees relative to horizontal)
+        if (left_right == "left"):
+            self.gun_angle = 20
+        else :
+            self.gun_angle = 50
+        # Amount of power to fire with - is divided by 40 to give scale 10 to 100
+        self.gun_power = 25
 
     def set_position (self, position):
         self.position = position
@@ -18,11 +25,39 @@ class Tank:
     def get_position (self):
         return self.position
 
+    def set_gun_angle (self, angle):
+        self.gun_angle = angle
+
+    def change_gun_angle (self, amount):
+        self.gun_angle += amount
+        if self.gun_angle > 85:
+            self.gun_angle = 85
+        if self.gun_angle < 0:
+            self.gun_angle = 0
+
+    def get_gun_angle (self):
+        return self.gun_angle
+
+    def set_gun_power (self, power):
+        self.gun_power = power
+
+    def change_gun_power (self, amount):
+        self.gun_power += amount
+        if self.gun_power > 100:
+            self.gun_power = 100
+        if self.gun_power < 10:
+            self.gun_power = 10
+
+    def get_gun_power (self):
+        return self.gun_power
+
+
+
     # Draws tank (including gun - which depends upon direction and aim)
     # self.left_right can be "left" or "right" to depict which position the tank is in
     # tank_start_pos requires x, y co-ordinates as a tuple
     # angle is relative to horizontal - in degrees
-    def draw (self, screen, gun_angle):
+    def draw (self, screen):
         (xpos, ypos) = self.position
 
         # The shape of the tank track is a polygon
@@ -49,12 +84,12 @@ class Tank:
         pygame.draw.ellipse(screen.surface, self.tank_color, turret_rect)
 
         # Gun position involves more complex calculations so in a separate function
-        gun_positions = self.calc_gun_positions (gun_angle)
+        gun_positions = self.calc_gun_positions ()
         # Polygon for gun barrel (pygame not pygame zero)
         pygame.draw.polygon(screen.surface, self.tank_color, gun_positions)
 
     # Calculate the polygon positions for the gun barrel
-    def calc_gun_positions (self, gun_angle):
+    def calc_gun_positions (self):
         (xpos, ypos) = self.position
         # Set the start of the gun (top of barrel at point it joins the tank)
         if (self.left_right == "right"):
@@ -63,9 +98,9 @@ class Tank:
             gun_start_pos_top = (xpos+40, ypos-20)
 
         # Convert angle to radians (for right subtract from 180 deg first)
-        relative_angle = gun_angle
+        relative_angle = self.gun_angle
         if (self.left_right == "right"):
-            relative_angle = 180 - gun_angle
+            relative_angle = 180 - self.gun_angle
         angle_rads = relative_angle * (math.pi / 180)
         # Create vector based on the direction of the barrel
         # Y direction *-1 (due to reverse y of screen)

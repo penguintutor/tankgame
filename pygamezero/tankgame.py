@@ -31,13 +31,6 @@ TEXT_COLOR = (255,255,255)
 # Timer used to create delays before action (prevent accidental button press)
 game_timer = 0
 
-# Angle that the gun is pointing (degrees relative to horizontal)
-left_gun_angle = 20
-right_gun_angle = 50
-# Amount of power to fire with - is divided by 40 to give scale 10 to 100
-left_gun_power = 25
-right_gun_power = 25
-
 # Tank 1 = Left
 tank1 = Tank("left", TANK_COLOR_P1)
 # Tank 2 = Right
@@ -54,15 +47,15 @@ tank2.set_position(ground.get_tank2_position())
 
 
 def draw():
-    global game_state, left_tank_position, right_tank_position, left_gun_angle, right_gun_angle, shell_start_position
+    global game_state
     screen.fill(SKY_COLOR)
     ground.draw(screen)
-    tank1.draw (screen, left_gun_angle)
-    tank2.draw (screen, right_gun_angle)
+    tank1.draw (screen)
+    tank2.draw (screen)
     if (game_state == "player1" or game_state == "player1fire"):
-        screen.draw.text("Player 1\nPower "+str(left_gun_power)+"%", fontsize=30, topleft=(50,50), color=(TEXT_COLOR))
+        screen.draw.text("Player 1\nPower "+str(tank1.get_gun_power())+"%", fontsize=30, topleft=(50,50), color=(TEXT_COLOR))
     if (game_state == "player2" or game_state == "player2fire"):
-        screen.draw.text("Player 2\nPower "+str(right_gun_power)+"%", fontsize=30, topright=(WIDTH-50,50), color=(TEXT_COLOR))
+        screen.draw.text("Player 2\nPower "+str(tank2.get_gun_power())+"%", fontsize=30, topright=(WIDTH-50,50), color=(TEXT_COLOR))
     if (game_state == "player1fire" or game_state == "player2fire"):
         shell.draw(screen)
     if (game_state == "game_over_1"):
@@ -71,7 +64,7 @@ def draw():
         screen.draw.text("Game Over\nPlayer 2 wins!", fontsize=60, center=(WIDTH/2,200), color=(TEXT_COLOR))
 
 def update():
-    global game_state, left_gun_angle, left_gun_power, right_gun_power, game_timer
+    global game_state, game_timer
     # Delayed start (prevent accidental firing by holding start button down)
     if (game_state == 'start'):
         game_timer += 1
@@ -84,12 +77,12 @@ def update():
         if (player1_fired == True):
             # Set shell position to end of gun
             # Use gun_positions so we can get start position
-            gun_positions = tank1.calc_gun_positions (left_gun_angle)
+            gun_positions = tank1.calc_gun_positions ()
             shell.set_start_position(gun_positions[3])
             shell.set_current_position(gun_positions[3])
             game_state = 'player1fire'
-            shell.set_angle(math.radians (left_gun_angle))
-            shell.set_power(left_gun_power / 40)
+            shell.set_angle(math.radians (tank1.get_gun_angle()))
+            shell.set_power(tank1.get_gun_power() / 40)
             shell.set_time(0)
     if (game_state == 'player1fire'):
         shell.update_shell_position ("left")
@@ -106,12 +99,12 @@ def update():
         if (player2_fired == True):
             # Set shell position to end of gun
             # Use gun_positions so we can get start position
-            gun_positions = tank2.calc_gun_positions (right_gun_angle)
+            gun_positions = tank2.calc_gun_positions ()
             shell.set_start_position(gun_positions[3])
             shell.set_current_position(gun_positions[3])
             game_state = 'player2fire'
-            shell.set_angle(math.radians (right_gun_angle))
-            shell.set_power(right_gun_power / 40)
+            shell.set_angle(math.radians (tank2.get_gun_angle()))
+            shell.set_power(tank2.get_gun_power() / 40)
             shell.set_time(0)
     if (game_state == 'player2fire'):
         shell.update_shell_position ("right")
@@ -174,44 +167,40 @@ def detect_hit (left_right):
 # If player has hit fire key (space) then returns True
 # Otherwise changes angle of gun if applicable and returns False
 def player_keyboard(left_right):
-    global shell_start_position, left_gun_angle, right_gun_angle, left_gun_power, right_gun_power
+    global shell_start_position
 
     # get current angle
     if (left_right == 'left'):
-        this_gun_angle = left_gun_angle
-        this_gun_power = left_gun_power
+        this_gun_angle = tank1.get_gun_angle()
+        this_gun_power = tank1.get_gun_power()
     else:
-        this_gun_angle = right_gun_angle
-        this_gun_power = right_gun_power
+        this_gun_angle = tank2.get_gun_angle()
+        this_gun_power = tank2.get_gun_power()
 
     # Allow space key or left-shift (picade) to fire
     if (keyboard.space or keyboard.lshift):
         return True
     # Up moves firing angle upwards, down moves it down
     if (keyboard.up):
-        this_gun_angle += 1
-        if (this_gun_angle > 85):
-            this_gun_angle = 85
+        if (left_right == 'left'):
+            tank1.change_gun_angle(1)
+        else:
+            tank2.change_gun_angle(1)
     if (keyboard.down):
-        this_gun_angle -= 1
-        if (this_gun_angle < 0):
-            this_gun_angle = 0
+        if (left_right == 'left'):
+            tank1.change_gun_angle(-1)
+        else:
+            tank2.change_gun_angle(-1)
     # left reduces power, right increases power
     if (keyboard.right):
-        this_gun_power += 1
-        if (this_gun_power > 100):
-            this_gun_power = 100
+        if (left_right == 'left'):
+            tank1.change_gun_power(1)
+        else:
+            tank2.change_gun_power(1)
     if (keyboard.left):
-        this_gun_power -= 1
-        if (this_gun_power < 10):
-            this_gun_power = 10
-
-    # Update the appropriate global (left / right)
-    if (left_right == 'left'):
-        left_gun_angle = this_gun_angle
-        left_gun_power = this_gun_power
-    else:
-        right_gun_angle = this_gun_angle
-        right_gun_power = this_gun_power
+        if (left_right == 'left'):
+            tank1.change_gun_power(-1)
+        else:
+            tank2.change_gun_power(-1)
 
     return False
