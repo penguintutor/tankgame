@@ -41,10 +41,9 @@ shell = Shell(SHELL_COLOR)
 
 ground = Land(GROUND_COLOR, (WIDTH, HEIGHT))
 
-
+# Get positions of tanks from ground generator
 tank1.set_position(ground.get_tank1_position())
 tank2.set_position(ground.get_tank2_position())
-
 
 def draw():
     global game_state
