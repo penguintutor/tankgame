@@ -88,13 +88,10 @@ class Land:
                 y_delta = 0
             else:
                 y_delta = (next_land_y - current_land_y) / (next_land_x - current_land_x)
-            #print ("Current {}, next {}".format(current_land_x, next_land_x))
             for i in range (current_land_x, next_land_x):
-                #print ("Current value {}, next value{}".format(current_land_x, next_land_x))
                 current_land_y += y_delta
                 self.land_y_positions[current_land_x] = int(current_land_y)
                 current_land_x += 1
-            #print ("** End current value {}, next value{}".format(current_land_x, next_land_x))
             
 
     def get_tank1_position(self):
@@ -113,5 +110,8 @@ class Land:
             current_land_x += 1
         
         
+        
+
+
         
 
