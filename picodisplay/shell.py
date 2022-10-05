@@ -35,7 +35,7 @@ class Shell:
     def draw (self):
         (xpos, ypos) = self.current_position
         # Create rectangle of the shell
-        self.display.set_pen(*self.shell_color)
+        self.display.set_pen(self.shell_color)
         self.display.rectangle(int(xpos), int(ypos), 2, 2)
         
     def update_shell_position (self, left_right):

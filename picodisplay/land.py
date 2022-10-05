@@ -18,21 +18,25 @@ class Land:
     def __init__ (self, display, ground_color):
         self.display = display
         self.ground_color = ground_color
-        self.screen_size = (display.get_width(), display.get_height())
+        width, height = display.get_bounds()
+        self.screen_size = (width, height)
         self.setup()
         
     def setup(self):
         
         # Create an array of land y values - gravity means that all blocks below are solid (no caves)
         # Initially all set to 0
-        self.land_y_positions = [0] * self.display.get_width()
+        width = self.screen_size[0]
+        height = self.screen_size[1]
+        
+        self.land_y_positions = [0] * width
         
         # Setup landscape (these positions represent left side of platform)
         # Choose a random position (temp values - to be stored in tank object)
         # The complete x,y co-ordinates will be saved in a tuple in left_tank_rect and right_tank_rect
         # includes a DMZ of 40 pixels
-        left_tank_x_position = random.randint (10,int(self.screen_size[0]/2)-30)
-        right_tank_x_position = random.randint (int(self.screen_size[0]/2)+30,self.screen_size[0]-40)
+        left_tank_x_position = random.randint (10,int(width/2)-30)
+        right_tank_x_position = random.randint (int(width/2)+30, width-40)
         
         self.tank1_position = (left_tank_x_position,0)
         self.tank2_position = (right_tank_x_position,0)
@@ -41,7 +45,7 @@ class Land:
         current_land_x = 0
         next_land_x = 0 + LAND_CHUNK_SIZE
         # start y position at least 50 from top 20 from bottom
-        current_land_y = random.randint (50,self.display.get_height()-20)
+        current_land_y = random.randint (50,self.screen_size[1]-20)
         self.land_y_positions[current_land_x] = current_land_y
         while (current_land_x < self.screen_size[0]):
             # If where tank is then we create a flat area for tank to sit on
@@ -102,7 +106,7 @@ class Land:
         
 
     def draw (self):
-        self.display.set_pen(*self.ground_color)
+        self.display.set_pen(self.ground_color)
         current_land_x = 0
         for this_pos in self.land_y_positions:
             for this_y in range (self.land_y_positions[current_land_x], self.screen_size[1]):
@@ -114,4 +118,5 @@ class Land:
 
 
         
+
 

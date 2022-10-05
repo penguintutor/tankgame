@@ -27,6 +27,14 @@ class Tank:
     
     def get_position (self):
         return self.position
+    
+    # Returns a bounding rectangle for collision detection
+    # returns tuple x1, y1, x2, y2
+    def get_rect (self):
+        return (self.position[0]+4, self.position[1]-14, self.position[0]+28, self.position[1])
+    
+
+        
         
     def set_gun_angle (self, angle):
         self.gun_angle = angle
@@ -61,7 +69,7 @@ class Tank:
     # tank_start_pos requires x, y co-ordinates as a tuple
     # angle is relative to horizontal - in degrees
     def draw (self):
-        self.display.set_pen(*self.tank_color)
+        self.display.set_pen(self.tank_color)
 
         # Tracks
         self.display.pixel_span(self.position[0]+6, self.position[1]-10, 20)

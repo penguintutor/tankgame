@@ -1,31 +1,32 @@
 import math
 import random
 import utime
-import picodisplay as display
+from picographics import PicoGraphics, DISPLAY_PICO_DISPLAY
+from pimoroni import Button
 from tank import Tank
 from shell import Shell
 from land import Land
 
+button_a = Button(12)
+button_b = Button(13)
+button_x = Button(14)
+button_y = Button(15)
 
-
-width = display.get_width()
-height = display.get_height()
-
-display_buffer = bytearray(width * height * 2)  # 2-bytes per pixel (RGB565)
-display.init(display_buffer)
-
+display = PicoGraphics(display=DISPLAY_PICO_DISPLAY, rotate=0)
 display.set_backlight(1.0)
 
+width, height = display.get_bounds()
+
 # Colour constants
-SKY_COLOR = (165, 182, 255)
-GROUND_COLOR = (9,84,5)     
+sky_color = display.create_pen(165,182,255)
+gnd_color = display.create_pen(9,84,5)     
 # Different tank colors for player 1 and player 2
 # These colors must be unique as well as the GROUND_COLOR
-TANK_COLOR_P1 = (216, 216, 153)     
-TANK_COLOR_P2 = (219, 163, 82)      
-SHELL_COLOR = (255,255,255)
-TEXT_COLOR = (255,255,255)
-TEXT_COLOR_ACTIVE = (0,0,0)
+tank_color_p1 = display.create_pen(216, 216, 153)     
+tank_color_p2 = display.create_pen(219, 163, 82)      
+shell_color = display.create_pen(255,255,255)
+text_color = display.create_pen(255,255,255)
+text_color_active = display.create_pen(0,0,0)
 
 # States are:
 # start - timed delay before start
@@ -40,50 +41,59 @@ game_state = "player1"
 key_mode = "angle"
 
 # Tank 1 = Left
-tank1 = Tank(display, "left", TANK_COLOR_P1)
+tank1 = Tank(display, "left", tank_color_p1)
 # Tank 2 = Right
-tank2 = Tank(display, "right", TANK_COLOR_P2)
+tank2 = Tank(display, "right", tank_color_p2)
 
 # Only fire one shell at a time, a single shell object can be used for both player 1 and player 2    
-shell = Shell(display, SHELL_COLOR)
+shell = Shell(display, shell_color)
     
-ground = Land(display, GROUND_COLOR)
-
+ground = Land(display, gnd_color)
 
 def run_game():
     global key_mode, game_state
 
     while True:
         ## Draw methods
-        display.set_pen(*SKY_COLOR)
+        display.set_pen(sky_color)
         display.clear()
+        
+        display.set_pen(tank_color_p1)
+        
         ground.draw()
         tank1.draw ()
         tank2.draw ()
         
+        # debug tank rect
+        #display.set_pen(display.create_pen(255,0,0))
+        #positions = tank2.get_rect()
+        #display.rectangle(positions[0], positions[1], positions[2]-positions[0], positions[3]-positions[1])
+        
+        display.update()
+        
         if (game_state == "player1fire" or game_state == "player2fire"):
             shell.draw()
 
-        display.set_pen(*TEXT_COLOR)
+        display.set_pen(text_color)
         if (game_state == "player1" or game_state == "player1fire"):
             display.text("Player 1", 10, 10, 240, 1)
             if (key_mode == "power"):
-                display.set_pen(*TEXT_COLOR_ACTIVE)
+                display.set_pen(text_color_active)
             display.text("Power "+str(tank1.get_gun_power())+"%", 10, 20, 240, 1)#
             if (key_mode == "angle"):
-                display.set_pen(*TEXT_COLOR_ACTIVE)
+                display.set_pen(text_color_active)
             else:
-                display.set_pen(*TEXT_COLOR)
+                display.set_pen(text_color)
             display.text("Angle "+str(tank1.get_gun_angle()), 10, 30, 240, 1)
         if (game_state == "player2" or game_state == "player2fire"):
             display.text("Player 2", 180, 10, 240, 1)
             if (key_mode == "power"):
-                display.set_pen(*TEXT_COLOR_ACTIVE)
+                display.set_pen(text_color_active)
             display.text("Power "+str(tank2.get_gun_power())+"%", 180, 20, 240, 1)
             if (key_mode == "angle"):
-                display.set_pen(*TEXT_COLOR_ACTIVE)
+                display.set_pen(text_color_active)
             else:
-                display.set_pen(*TEXT_COLOR)
+                display.set_pen(text_color)
             display.text("Angle "+str(tank2.get_gun_angle()), 180, 30, 240, 1)
         if (game_state == "game_over_1"):
             display.text("Game Over", 50, 20, 240, 3)
@@ -148,7 +158,7 @@ def run_game():
                 key_mode = "angle"
         if (game_state == 'game_over_1' or game_state == 'game_over_2'):
             # Allow space key or left-shift (picade) to continue
-            if (display.is_pressed(display.BUTTON_B)) :
+            if (button_b.read()) :
                 # Reset position of tanks and terrain
                 setup()
 
@@ -167,8 +177,7 @@ def setup():
     
     
 # Detects if the shell has hit something. 
-# Simple detection looks at colour of the screen at the position 
-# uses an offset to not detect the actual shell
+
 # Return 0 for in-flight, 
 # 1 for offscreen temp (too high), 
 # 10 for offscreen permanent (too far), 
@@ -195,21 +204,39 @@ def detect_hit (left_right):
             return 10
         return 1
         
-    # Get colour at position
-    color_values = get_display_bytes(*offset_position)
-    ground_color_bytes = color_to_bytes(GROUND_COLOR)
-    tank1_color_bytes = color_to_bytes(TANK_COLOR_P1)
-    tank2_color_bytes = color_to_bytes(TANK_COLOR_P2)
+    # check to see if it's hit a tank
     
-    if (color_values == ground_color_bytes):
-        # Hit ground
+    # get x and y for rect covering tank
+    tank1_rect = tank1.get_rect()
+    tank2_rect = tank2.get_rect()
+    
+    # If gone below bottom of screen - hit ground
+    if (shell_y >= height):
         return 11
-    if (left_right == 'left' and color_values == tank2_color_bytes):
-        # Hit tank 2
+    
+    # If hit tank 1
+    if (left_right == 'right' and
+        shell_x >= tank1_rect[0] and
+        shell_x <= tank1_rect[2] and
+        shell_y >= tank1_rect[1] and
+        shell_y <= tank1_rect[3]):
+        print ("Hit Tank 1")
         return 20
-    if (left_right == 'right' and color_values == tank1_color_bytes):
-        # Hit tank 1
+
+    # If hit tank 2
+    if (left_right == 'left' and
+            shell_x >= tank2_rect[0] and
+            shell_x <= tank2_rect[2] and
+            shell_y >= tank2_rect[1] and
+            shell_y <= tank2_rect[3]):
+        print ("Hit Tank 2")
         return 20
+
+    
+    #if (color_values == ground_color_bytes):
+        # Hit ground
+    #    return 11
+
 
     return 0
     
@@ -221,7 +248,7 @@ def player_keyboard(left_right):
     global key_mode
     
     # change key_mode between angle and power using B button
-    if (display.is_pressed(display.BUTTON_B)) :
+    if (button_b.read()) :
         if key_mode == "angle":
             key_mode = "power"
         else:
@@ -230,10 +257,10 @@ def player_keyboard(left_right):
         utime.sleep(0.5)
     
     # A button is fire
-    if (display.is_pressed(display.BUTTON_A)) :
+    if (button_a.read()) :
         return True
     # Up moves firing angle upwards or increase power
-    if (display.is_pressed(display.BUTTON_X)) :
+    if (button_x.read()) :
         if (key_mode == "angle" and left_right == 'left'):
             tank1.change_gun_angle(5)
         elif (key_mode == "angle" and left_right == 'right'):
@@ -243,7 +270,7 @@ def player_keyboard(left_right):
         elif (key_mode == "power" and left_right == 'right'):
             tank2.change_gun_power(5)
     # Down moves firing angle downwards or decrease power
-    if (display.is_pressed(display.BUTTON_Y)) :
+    if (button_y.read()) :
         if (key_mode == "angle" and left_right == 'left'):
             tank1.change_gun_angle(-5)
         elif (key_mode == "angle" and left_right == 'right'):
@@ -273,3 +300,4 @@ def color_to_bytes (color):
     
 setup()
 run_game()
+
