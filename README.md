@@ -37,13 +37,17 @@ Before you can run the game you need the Pimoroni version of MicroPython. For de
 
 The Raspberry Pi Pico program is in the directory picodisplay. You need to copy all of the files onto the Pico. The easiest way to do this is using the Thonny editor which can upload files to the Pico.
 
-# Playing the Raspberry Pi Pico version
+## Playing the Raspberry Pi Pico version
 
 The game is a pass and play game starting with player 1. Press the B button to select between Angle and Power adjustment. The appropriate mode will be displayed on the screen. Press the X and Y buttons to adjust the angle or power as appropriate. Press the A button to fire a shell.
 
 If you score a hit then you win, otherwise the game passes to the next player.
 
-# More Details
+## Update October 2022
+
+The Pico version of the program has been rewritten to use the new picodisplay library, included in the Pimoroni Micropython image for the Raspberry Pi Pico. 
+
+## More Details
 
 For more details about the game see:
 http://www.penguintutor.com/projects/pico-tankgame
