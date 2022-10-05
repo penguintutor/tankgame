@@ -232,12 +232,9 @@ def detect_hit (left_right):
         print ("Hit Tank 2")
         return 20
 
+    if (ground.is_ground(int(shell_x), int(shell_y))):
+        return 11
     
-    #if (color_values == ground_color_bytes):
-        # Hit ground
-    #    return 11
-
-
     return 0
     
 # Handles keyboard for players

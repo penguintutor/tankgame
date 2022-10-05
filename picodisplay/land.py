@@ -104,6 +104,11 @@ class Land:
     def get_tank2_position(self):
         return self.tank2_position
         
+    # checks if a x,y position is ground or not
+    def is_ground(self, x, y):
+        if (y >= self.land_y_positions[x]):
+            return True
+        return False
 
     def draw (self):
         self.display.set_pen(self.ground_color)
