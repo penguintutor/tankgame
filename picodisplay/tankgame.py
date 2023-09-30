@@ -1,16 +1,66 @@
 import math
 import random
 import utime
+from utime import sleep_ms
 from picographics import PicoGraphics, DISPLAY_PICO_DISPLAY
 from pimoroni import Button
-from tank import Tank
+from pimoroni import RGBLED
 from shell import Shell
 from land import Land
+from tank import Tank
+from machine import Pin
 
-button_a = Button(12)
-button_b = Button(13)
-button_x = Button(14)
-button_y = Button(15)
+
+led = RGBLED(6, 7, 8)
+
+button_a_pin = Pin(12, Pin.IN, Pin.PULL_UP)
+button_b_pin = Pin(13, Pin.IN, Pin.PULL_UP)
+button_x_pin = Pin(14, Pin.IN, Pin.PULL_UP)
+button_y_pin = Pin(15, Pin.IN, Pin.PULL_UP)
+
+# These act as interrupt flags
+button_a_pressed = False
+button_b_pressed = False
+button_x_pressed = False
+button_y_pressed = False
+
+# Function definitions for button Handlers
+# These are the functions that are called when each button gets pressed
+def button_a_handler(pin):
+   global button_a_pressed
+   led.set_rgb(255, 0, 0)
+   sleep_ms(10) # sleep for 50 milliseconds
+   led.set_rgb(0, 0, 0)
+   button_a_pressed = True
+
+def button_b_handler(pin):
+   global button_b_pressed
+   led.set_rgb(0, 100, 0)
+   sleep_ms(2) # sleep for 50 milliseconds
+   led.set_rgb(0, 0, 0)
+   button_b_pressed = True
+
+def button_x_handler(pin):
+   global button_x_pressed
+   led.set_rgb(0, 0, 150)
+   sleep_ms(2) # sleep for 50 milliseconds
+   led.set_rgb(0, 0, 0)
+
+   button_x_pressed = True
+
+def button_y_handler(pin):
+   global button_y_pressed
+   led.set_rgb(0, 0, 50)
+   sleep_ms(2) # sleep for 50 milliseconds
+   led.set_rgb(0, 0, 0)
+   button_y_pressed = True
+
+# Attach the handlers
+button_a_pin.irq(trigger=Pin.IRQ_FALLING, handler=button_a_handler)
+button_b_pin.irq(trigger=Pin.IRQ_FALLING, handler=button_b_handler)
+button_x_pin.irq(trigger=Pin.IRQ_FALLING, handler=button_x_handler)
+button_y_pin.irq(trigger=Pin.IRQ_FALLING, handler=button_y_handler)
+
 
 display = PicoGraphics(display=DISPLAY_PICO_DISPLAY, rotate=0)
 display.set_backlight(1.0)
@@ -40,6 +90,9 @@ game_state = "player1"
 # switch button mode from angle to power
 key_mode = "angle"
 
+# keeps track of the next shooter after a game over
+next_first_shooter = None  
+
 # Tank 1 = Left
 tank1 = Tank(display, "left", tank_color_p1)
 # Tank 2 = Right
@@ -50,16 +103,23 @@ shell = Shell(display, shell_color)
     
 ground = Land(display, gnd_color)
 
+def reset_keys():
+    global button_b_pressed, button_a_pressed, button_x_pressed, button_y_pressed
+    button_b_pressed = False
+    button_a_pressed = False
+    button_x_pressed = False
+    button_y_pressed = False
+
 def run_game():
-    global key_mode, game_state
+    global key_mode, game_state, next_first_shooter, button_b_pressed
 
     while True:
         ## Draw methods
         display.set_pen(sky_color)
         display.clear()
-        
+
         display.set_pen(tank_color_p1)
-        
+
         ground.draw()
         tank1.draw ()
         tank2.draw ()
@@ -69,7 +129,6 @@ def run_game():
         #positions = tank2.get_rect()
         #display.rectangle(positions[0], positions[1], positions[2]-positions[0], positions[3]-positions[1])
         
-        display.update()
         
         if (game_state == "player1fire" or game_state == "player2fire"):
             shell.draw()
@@ -79,7 +138,7 @@ def run_game():
             display.text("Player 1", 10, 10, 240, 1)
             if (key_mode == "power"):
                 display.set_pen(text_color_active)
-            display.text("Power "+str(tank1.get_gun_power())+"%", 10, 20, 240, 1)#
+            display.text("Power "+str(tank1.get_gun_power())+"%", 10, 20, 240, 1)
             if (key_mode == "angle"):
                 display.set_pen(text_color_active)
             else:
@@ -96,12 +155,22 @@ def run_game():
                 display.set_pen(text_color)
             display.text("Angle "+str(tank2.get_gun_angle()), 180, 30, 240, 1)
         if (game_state == "game_over_1"):
+             # Player 1 won, so Player2 should start next.
+            next_first_shooter = "player2"
             display.text("Game Over", 50, 20, 240, 3)
             display.text("Player 1 wins!", 30, 40, 240, 3)
+            # show a red LED indicating the explosion
+            led.set_rgb(255, 0, 0)
         if (game_state == "game_over_2"):
+            # Player 2 won, so Player1 should start next.
+            next_first_shooter = "player1"
             display.text("Game Over", 50, 20, 240, 3)
             display.text("Player 2 wins!", 30, 40, 240, 3)
-        display.update()
+            # show a red LED indicating the explosion
+            led.set_rgb(255, 0, 0)
+            
+        display.update()    # Update the display only after all drawing is done.
+        
 
 
         ## Update methods
@@ -128,9 +197,10 @@ def run_game():
                 game_state = 'game_over_1'
             # 10 is offscreen and 11 is hit ground, both indicate missed
             elif (shell_value >= 10):
-                # reset key mode to angle
-                key_mode = "angle"
                 game_state = 'player2'
+                reset_keys()
+                # reset key mode to angle
+                key_mode = "angle"                
         if (game_state == 'player2'):
             player2_fired = player_keyboard("right")
             if (player2_fired == True):
@@ -154,25 +224,33 @@ def run_game():
             # 10 is offscreen and 11 is hit ground, both indicate missed
             elif (shell_value >= 10):
                 game_state = 'player1'
+                reset_keys()
                 # reset key mode to angle
                 key_mode = "angle"
         if (game_state == 'game_over_1' or game_state == 'game_over_2'):
             # Allow space key or left-shift (picade) to continue
-            if (button_b.read()) :
+            if button_b_pressed:
                 # Reset position of tanks and terrain
                 setup()
 
 
 # Reset
 def setup():
-    global game_state, key_mode
+    global game_state, key_mode, next_first_shooter
+    reset_keys()
+    led.set_rgb(0, 0, 0)
     # reset key mode to angle
     key_mode = "angle"
     ground.setup()
     # Get positions of tanks from ground generator
     tank1.set_position(ground.get_tank1_position())
     tank2.set_position(ground.get_tank2_position())
-    game_state = "player1"
+    
+    # Update game_state based on who lost last game.
+    if next_first_shooter is not None:
+        game_state = next_first_shooter
+    else:
+        game_state = "player1"
     
     
     
@@ -242,10 +320,13 @@ def detect_hit (left_right):
 # If player has hit fire key (space) then returns True
 # Otherwise changes angle of gun if applicable and returns False
 def player_keyboard(left_right):
-    global key_mode
-    
+    global key_mode, button_b_pressed, button_a_pressed, button_x_pressed, button_y_pressed
+   
     # change key_mode between angle and power using B button
-    if (button_b.read()) :
+    # Check if button B was pressed
+    if button_b_pressed:
+        # process button B press
+        button_b_pressed = False        
         if key_mode == "angle":
             key_mode = "power"
         else:
@@ -254,10 +335,16 @@ def player_keyboard(left_right):
         utime.sleep(0.5)
     
     # A button is fire
-    if (button_a.read()) :
+    # Check if button A was pressed
+    if button_a_pressed:
+        # process button A press
+        button_a_pressed = False    
         return True
     # Up moves firing angle upwards or increase power
-    if (button_x.read()) :
+    # Check if button X was pressed
+    if button_x_pressed:
+        # process button X press
+        button_x_pressed = False    
         if (key_mode == "angle" and left_right == 'left'):
             tank1.change_gun_angle(5)
         elif (key_mode == "angle" and left_right == 'right'):
@@ -267,7 +354,10 @@ def player_keyboard(left_right):
         elif (key_mode == "power" and left_right == 'right'):
             tank2.change_gun_power(5)
     # Down moves firing angle downwards or decrease power
-    if (button_y.read()) :
+    # Check if button Y was pressed
+    if button_y_pressed:
+        # process button Y press
+        button_y_pressed = False    
         if (key_mode == "angle" and left_right == 'left'):
             tank1.change_gun_angle(-5)
         elif (key_mode == "angle" and left_right == 'right'):
@@ -297,4 +387,3 @@ def color_to_bytes (color):
     
 setup()
 run_game()
-
