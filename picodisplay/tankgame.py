@@ -52,7 +52,7 @@ shell = Shell(display, shell_color)
 ground = Land(display, gnd_color)
 
 def run_game():
-    global key_mode, game_state
+    global key_mode, game_state, next_first_shooter
 
     while True:
         ## Draw methods
