@@ -3,9 +3,10 @@ import random
 import utime
 from picographics import PicoGraphics, DISPLAY_PICO_DISPLAY
 from pimoroni import Button
+from tank import Tank
 from shell import Shell
 from land import Land
-from tank import Tank
+
 
 button_a = Button(12)
 button_b = Button(13)
@@ -27,6 +28,7 @@ tank_color_p2 = display.create_pen(219, 163, 82)
 shell_color = display.create_pen(255,255,255)
 text_color = display.create_pen(255,255,255)
 text_color_active = display.create_pen(0,0,0)
+
 # States are:
 # start - timed delay before start
 # player1 - waiting for player to set position
@@ -39,6 +41,7 @@ game_state = "player1"
 # switch button mode from angle to power
 key_mode = "angle"
 
+# keeps track of the next shooter after a game over
 next_first_shooter = None  
 
 # Tank 1 = Left
