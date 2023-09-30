@@ -7,6 +7,7 @@ from tank import Tank
 from shell import Shell
 from land import Land
 
+
 button_a = Button(12)
 button_b = Button(13)
 button_x = Button(14)
@@ -40,6 +41,9 @@ game_state = "player1"
 # switch button mode from angle to power
 key_mode = "angle"
 
+# keeps track of the next shooter after a game over
+next_first_shooter = None  
+
 # Tank 1 = Left
 tank1 = Tank(display, "left", tank_color_p1)
 # Tank 2 = Right
@@ -51,15 +55,15 @@ shell = Shell(display, shell_color)
 ground = Land(display, gnd_color)
 
 def run_game():
-    global key_mode, game_state
+    global key_mode, game_state, next_first_shooter
 
     while True:
         ## Draw methods
         display.set_pen(sky_color)
         display.clear()
-        
+
         display.set_pen(tank_color_p1)
-        
+
         ground.draw()
         tank1.draw ()
         tank2.draw ()
@@ -69,7 +73,6 @@ def run_game():
         #positions = tank2.get_rect()
         #display.rectangle(positions[0], positions[1], positions[2]-positions[0], positions[3]-positions[1])
         
-        display.update()
         
         if (game_state == "player1fire" or game_state == "player2fire"):
             shell.draw()
@@ -79,7 +82,7 @@ def run_game():
             display.text("Player 1", 10, 10, 240, 1)
             if (key_mode == "power"):
                 display.set_pen(text_color_active)
-            display.text("Power "+str(tank1.get_gun_power())+"%", 10, 20, 240, 1)#
+            display.text("Power "+str(tank1.get_gun_power())+"%", 10, 20, 240, 1)
             if (key_mode == "angle"):
                 display.set_pen(text_color_active)
             else:
@@ -96,12 +99,17 @@ def run_game():
                 display.set_pen(text_color)
             display.text("Angle "+str(tank2.get_gun_angle()), 180, 30, 240, 1)
         if (game_state == "game_over_1"):
+             # Player 1 won, so Player2 should start next.
+            next_first_shooter = "player2"
             display.text("Game Over", 50, 20, 240, 3)
             display.text("Player 1 wins!", 30, 40, 240, 3)
         if (game_state == "game_over_2"):
+            # Player 2 won, so Player1 should start next.
+            next_first_shooter = "player1"
             display.text("Game Over", 50, 20, 240, 3)
             display.text("Player 2 wins!", 30, 40, 240, 3)
-        display.update()
+            
+        display.update()    # Update the display only after all drawing is done.
 
 
         ## Update methods
@@ -165,14 +173,19 @@ def run_game():
 
 # Reset
 def setup():
-    global game_state, key_mode
+    global game_state, key_mode, next_first_shooter
     # reset key mode to angle
     key_mode = "angle"
     ground.setup()
     # Get positions of tanks from ground generator
     tank1.set_position(ground.get_tank1_position())
     tank2.set_position(ground.get_tank2_position())
-    game_state = "player1"
+    
+    # Update game_state based on who lost last game.
+    if next_first_shooter is not None:
+        game_state = next_first_shooter
+    else:
+        game_state = "player1"
     
     
     
@@ -297,4 +310,3 @@ def color_to_bytes (color):
     
 setup()
 run_game()
-
