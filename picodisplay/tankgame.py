@@ -1,16 +1,16 @@
 import math
 import random
 import utime
+import machine
 from picographics import PicoGraphics, DISPLAY_PICO_DISPLAY
-from pimoroni import Button
 from tank import Tank
 from shell import Shell
 from land import Land
 
-button_a = Button(12)
-button_b = Button(13)
-button_x = Button(14)
-button_y = Button(15)
+button_a = machine.Pin(12, machine.Pin.IN, machine.Pin.PULL_UP)
+button_b = machine.Pin(13, machine.Pin.IN, machine.Pin.PULL_UP)
+button_x = machine.Pin(14, machine.Pin.IN, machine.Pin.PULL_UP)
+button_y = machine.Pin(15, machine.Pin.IN, machine.Pin.PULL_UP)
 
 display = PicoGraphics(display=DISPLAY_PICO_DISPLAY, rotate=0)
 display.set_backlight(1.0)
@@ -158,7 +158,7 @@ def run_game():
                 key_mode = "angle"
         if (game_state == 'game_over_1' or game_state == 'game_over_2'):
             # Allow space key or left-shift (picade) to continue
-            if (button_b.read()) :
+            if (button_b.value() == 0) :
                 # Reset position of tanks and terrain
                 setup()
 
@@ -245,7 +245,7 @@ def player_keyboard(left_right):
     global key_mode
     
     # change key_mode between angle and power using B button
-    if (button_b.read()) :
+    if (button_b.value() == 0) :
         if key_mode == "angle":
             key_mode = "power"
         else:
@@ -254,10 +254,11 @@ def player_keyboard(left_right):
         utime.sleep(0.5)
     
     # A button is fire
-    if (button_a.read()) :
+    if (button_a.value() == 0) :
         return True
     # Up moves firing angle upwards or increase power
-    if (button_x.read()) :
+    if (button_x.value() == 0) :
+        print ("X pressed")
         if (key_mode == "angle" and left_right == 'left'):
             tank1.change_gun_angle(5)
         elif (key_mode == "angle" and left_right == 'right'):
@@ -267,7 +268,8 @@ def player_keyboard(left_right):
         elif (key_mode == "power" and left_right == 'right'):
             tank2.change_gun_power(5)
     # Down moves firing angle downwards or decrease power
-    if (button_y.read()) :
+    if (button_y.value() == 0) :
+        print ("Y pressed")
         if (key_mode == "angle" and left_right == 'left'):
             tank1.change_gun_angle(-5)
         elif (key_mode == "angle" and left_right == 'right'):
@@ -297,4 +299,5 @@ def color_to_bytes (color):
     
 setup()
 run_game()
+
 

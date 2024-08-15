@@ -47,6 +47,10 @@ If you score a hit then you win, otherwise the game passes to the next player.
 
 The Pico version of the program has been rewritten to use the new picodisplay library, included in the Pimoroni Micropython image for the Raspberry Pi Pico. 
 
+## Update August 2023
+
+Updated for the Pico 2 (RP2350) to use the machine pin for the buttons instead of the pimoroni library
+
 ## More Details
 
 For more details about the game see:
